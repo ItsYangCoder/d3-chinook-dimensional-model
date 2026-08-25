@@ -1,62 +1,86 @@
 # D3 Chinook Dimensional Model
 
-A Group D3 data-engineering project that converts the normalized Chinook sales dataset into an analytics-ready dimensional model in Databricks.
+Databricks SQL project that transforms the normalized Chinook dataset into an analytics-ready star schema using a controlled **Source → Raw → Clean → Mart → Analytics** workflow.
 
-> **Project status:** In development  
-> Setup, source inspection, and Raw Sales have been completed. Clean, Mart, analytics, validation, dashboard, and presentation work are still being developed and reviewed.
+> **Delivery status:** Active development  
+> **Status date:** August 26, 2026 (PHT)  
+> The repository structure, source exploration, project setup, and Raw Sales load are merged into `main`. Additional domain work exists on feature branches and must pass review before it becomes part of the integrated pipeline.
 
-## Project objective
+## Overview
 
-The project demonstrates an end-to-end data workflow:
+The project is designed to demonstrate a small but complete data-engineering workflow:
 
-1. Inspect the shared Chinook CSV files.
-2. Load the source data into Raw Delta tables.
-3. Clean and standardize each data domain.
-4. Build a star schema with facts and dimensions.
-5. Answer business questions through reusable SQL.
-6. Validate the results and present them in a dashboard.
+- preserve the original CSV source;
+- create source-aligned Delta tables;
+- clean and standardize business data;
+- build reusable facts and dimensions;
+- validate row counts, keys, relationships, and measures;
+- answer business questions through SQL and dashboards;
+- manage team changes through branches and pull requests.
 
 ## Architecture
 
-| Layer | Databricks schema | Purpose |
+| Stage | Storage | Responsibility |
 |---|---|---|
-| Source | Shared Unity Catalog Volume | Stores the original CSV files without modification |
-| Raw | `workspace.d3_raw` | Holds source-aligned Delta tables |
-| Clean | `workspace.d3_clean` | Holds cleaned and standardized data |
-| Mart | `workspace.d3_mart` | Holds dimension and fact tables |
-| Quality | `workspace.d3_quality` | Holds validation results or invalid records |
+| Source | Unity Catalog Volume | Original Chinook CSV files; read-only for project members |
+| Raw | `workspace.d3_raw` | Source-aligned Delta tables with minimal transformation |
+| Clean | `workspace.d3_clean` | Standardized columns, data types, and validated relationships |
+| Mart | `workspace.d3_mart` | Reporting-ready dimensions and `fact_sales` |
+| Quality | `workspace.d3_quality` | Invalid records and reusable validation outputs |
+| Analytics | SQL queries and dashboard | Business questions, trends, and final insights |
 
-The intended processing flow is:
+```text
+Unity Catalog Volume
+        ↓
+      Raw
+        ↓
+      Clean
+        ↓
+Dimensions + fact_sales
+        ↓
+Analytics + validation + dashboard
+```
 
-`Volume CSVs → Raw → Clean → Mart → Analytics → Dashboard`
+## Source contract
 
-## Source data
-
-The Chinook CSV files are read from the shared Databricks Volume:
+The shared source is located at:
 
 ```text
 /Volumes/workspace/bronze/1st_volume/shared/week05/chinook_csv/
 ```
 
-The repository does **not** contain copies of the source CSV files. Users need access to the same Volume or must configure an authorized equivalent source path.
+Important rules:
 
-## Dimensional model
+- The repository does not store copies of the CSV files.
+- Source files are not edited, renamed, or deleted by the pipeline.
+- Raw tables are reproducible from the authorized Volume.
+- A different environment must provide an equivalent authorized source and update the path through its own configuration process.
 
-The proposed fact-table grain is:
+## Dimensional design
 
-> One row in `fact_sales` represents one track purchased as part of an invoice.
+### Fact grain
 
-Planned Mart tables:
+One row in `fact_sales` represents **one track purchased on one invoice line**.
 
-| Table | Purpose |
-|---|---|
-| `dim_customer` | Customer attributes used for segmentation and location analysis |
-| `dim_date` | Calendar attributes used for time-based reporting |
-| `dim_employee` | Employee and sales-support attributes |
-| `dim_track` | Track, album, artist, genre, and media attributes |
-| `fact_sales` | Invoice-line sales measures and dimension references |
+This grain is based on `InvoiceLineId`, not on the invoice header. It prevents invoice totals from being duplicated when an invoice contains multiple tracks.
 
-The final column names and relationships will be confirmed against the implemented Clean and Mart tables.
+### Planned star schema
+
+| Table | Grain | Main use |
+|---|---|---|
+| `dim_customer` | One row per customer | Customer and geographic analysis |
+| `dim_date` | One row per invoice date | Monthly, quarterly, and yearly trends |
+| `dim_employee` | One row per employee | Sales-support performance |
+| `dim_track` | One row per track | Track, album, artist, genre, and media analysis |
+| `fact_sales` | One row per invoice line | Quantity, unit price, and sales amount |
+
+Expected fact measure:
+
+```text
+sales_amount = quantity × unit_price
+```
+
+The final fact SQL must reconcile invoice-line sales with invoice totals before it is accepted.
 
 ## Repository structure
 
@@ -78,116 +102,170 @@ d3-chinook-dimensional-model/
 └── dashboard/
 ```
 
-- `src/notebooks/` contains interactive exploration and presentation notebooks.
-- `src/sql/00_setup/` creates schemas and inspects the source.
-- `src/sql/01_raw/` loads source-aligned Delta tables.
-- `src/sql/02_clean/` cleans and standardizes each domain.
-- `src/sql/03_mart/` creates dimensions and the sales fact table.
-- `src/sql/04_analytics/` contains business-analysis queries.
-- `tests/` contains source, Clean, Mart, and business-query checks.
-- `docs/` contains modeling decisions, assumptions, the data dictionary, and presentation notes.
-- `dashboard/` contains dashboard planning and final insights.
-
-## Current progress
-
-| Work item | Status |
+| Location | Purpose |
 |---|---|
-| Repository structure | Complete |
-| Shared Databricks schemas | Complete |
-| Source inspection | Complete |
-| Source-exploration notebook | Complete |
-| Raw Invoice and InvoiceLine tables | Complete |
-| Other Raw domain tables | In progress |
-| Clean tables | In progress |
-| Dimensions and `fact_sales` | Pending dependencies |
-| Business analytics | Pending Mart |
-| Validation and dashboard | In progress |
+| `src/notebooks/` | Interactive source exploration and final demonstration |
+| `src/sql/00_setup/` | Schema creation and repeatable source inspection |
+| `src/sql/01_raw/` | Source-to-Delta ingestion |
+| `src/sql/02_clean/` | Cleaning, standardization, and integration |
+| `src/sql/03_mart/` | Dimensions and central sales fact |
+| `src/sql/04_analytics/` | Business-facing analytical queries |
+| `tests/` | Source, Clean, Mart, and business-query validation |
+| `docs/` | Design decisions, assumptions, schema, and data dictionary |
+| `dashboard/` | Dashboard plan and final insights |
 
-Completed Raw Sales outputs:
+## Delivery status
 
-| Table | Verified rows |
-|---|---:|
-| `workspace.d3_raw.invoice_raw` | 412 |
-| `workspace.d3_raw.invoice_line_raw` | 2,240 |
+The status below reflects the repository audit, not only verbal progress reports.
 
-The source row counts matched the created Raw tables. Databricks also produced the technical `_rescued_data` column during file ingestion; inspected rows did not contain rescued values.
+| Component | Repository state | Review status |
+|---|---|---|
+| Project scaffolding | Merged into `main` | Complete |
+| Source-exploration notebook | Merged into `main` | Complete |
+| Setup and source inspection | Merged into `main` | Complete |
+| Raw Invoice and InvoiceLine | Merged into `main` | Complete |
+| Raw Customer | Code present on feature branch | PR/review required |
+| Clean Customer | Code present on feature branch | PR/review required |
+| Dim Customer | Code present on feature branch | PR/review required |
+| Clean Sales | Code present on feature branch | Integration review required |
+| Dim Date | Code present on feature branch | Depends on Clean Sales |
+| Raw Music | Feature branch currently contains a placeholder | Implementation required |
+| Clean Music | Code present on feature branch | Requires Raw Music and naming review |
+| Dim Track | Code present on feature branch | Requires qualified table names and integration review |
+| Raw/Clean/Dim Employee | Placeholder files on `main` | Implementation required |
+| Fact Sales | Feature branch currently contains a placeholder | Blocked by Clean and dimensions |
+| Monthly Sales Trend | Code present on feature branch | Must be updated to use final `fact_sales` |
+| Other analytics | Placeholder or not yet integrated | Implementation required |
+| Source and Clean tests | Code present on test branches | PR/review required |
+| Mart and business tests | Placeholder files | Implementation required |
+| Modeling documentation | Draft content on documentation branch | Technical review required |
+| Dashboard outputs | Not yet integrated | Pending Mart and analytics |
+
+### Verified merged results
+
+| Table | Source | Verified rows |
+|---|---|---:|
+| `workspace.d3_raw.invoice_raw` | `Invoice.csv` | 412 |
+| `workspace.d3_raw.invoice_line_raw` | `InvoiceLine.csv` | 2,240 |
+
+Databricks created the technical `_rescued_data` column during ingestion. The inspected records contained no rescued values. This column should be checked during Raw validation and excluded from downstream business models unless needed for investigation.
+
+## Known integration checks
+
+The following must be resolved before the end-to-end pipeline is declared complete:
+
+- Use fully qualified table names such as `workspace.d3_clean.table_name`.
+- Agree on one naming convention, particularly `invoice_line_clean` versus `invoiceline_clean`.
+- Complete Raw Music before executing Clean Music and `dim_track`.
+- Review any fallback values used during music-data repair and document their business justification.
+- Complete the employee domain before creating employee-related fact relationships or analysis.
+- Update temporary analytics queries to use the final Mart tables.
+- Confirm that all foreign keys in `fact_sales` resolve to the intended dimensions.
+- Reconcile `SUM(quantity * unit_price)` against source invoice totals.
+- Merge only tested changes into `main`.
 
 ## Execution order
 
-Run files according to their numbered folders:
+Execute only code that has been reviewed and merged into `main`.
 
-1. `00_setup`
-2. `01_raw`
-3. `02_clean`
-4. `03_mart`
-5. `04_analytics`
-6. `tests`
-7. Dashboard and project-demo notebook
+1. `src/sql/00_setup/`
+2. `src/sql/01_raw/`
+3. `tests/01_source_checks.sql`
+4. `src/sql/02_clean/`
+5. `tests/02_clean_checks.sql`
+6. `src/sql/03_mart/`
+7. `tests/03_mart_checks.sql`
+8. `src/sql/04_analytics/`
+9. `tests/04_business_query_checks.sql`
+10. Dashboard and project-demo notebook
 
-Do not run Mart files until their required Clean tables and dimensions are available.
+Do not run a downstream file when its upstream tables are missing or still under review.
 
-## Databricks requirements
+## Environment requirements
 
-- Access to the project Databricks workspace
+- Membership in the correct shared Databricks workspace
+- A SQL warehouse or supported serverless compute
 - `USE CATALOG` on `workspace`
-- Required permissions on the D3 schemas
+- Required privileges on `d3_raw`, `d3_clean`, `d3_mart`, and `d3_quality`
 - `USE SCHEMA` on `workspace.bronze`
 - `READ VOLUME` on `workspace.bronze.1st_volume`
-- A running SQL warehouse or supported serverless compute
+- Access to this GitHub repository using the member's own account
 
-Example source-access check:
+Source-access check:
 
 ```sql
 LIST '/Volumes/workspace/bronze/1st_volume/shared/week05/chinook_csv/';
 ```
 
-## Collaboration workflow
+Raw Sales verification:
 
-1. Pull the latest `main`.
-2. Create a task-specific branch.
-3. Edit only the assigned files.
-4. Run and validate the SQL in Databricks.
-5. Commit with a clear message.
-6. Push the branch and open a pull request.
-7. Review the changed files and results before merging.
+```sql
+SELECT 'invoice_raw' AS table_name, COUNT(*) AS row_count
+FROM workspace.d3_raw.invoice_raw
 
-Branches are personal working copies connected to the same GitHub repository. Team members should not share Databricks or GitHub credentials.
+UNION ALL
+
+SELECT 'invoice_line_raw', COUNT(*)
+FROM workspace.d3_raw.invoice_line_raw;
+```
+
+Expected output: 412 invoice rows and 2,240 invoice-line rows.
+
+## Development workflow
+
+1. Switch to `main` and pull the latest changes.
+2. Create a focused branch for one task.
+3. Change only the assigned files.
+4. Execute the SQL in the shared Databricks workspace.
+5. Record row counts and validation results.
+6. Commit with a clear, action-based message.
+7. Push and open a pull request into `main`.
+8. Review dependencies, changed files, and query results.
+9. Merge only after the branch is current and checks pass.
+10. Pull the updated `main` before starting dependent work.
+
+A Databricks Git-folder clone is a working copy of the same GitHub repository. It is not a separate repository or a fork.
+
+## Definition of done
+
+A task is complete only when:
+
+- the SQL runs successfully in the shared workspace;
+- upstream dependencies are available;
+- row counts and key checks are recorded;
+- table and column names follow the agreed convention;
+- no unauthorized business-value changes were introduced;
+- documentation reflects material transformations or assumptions;
+- the pull request has been reviewed and merged;
+- dependent members have pulled the updated `main`.
+
+Creating a branch or writing SQL without validation and merge does not count as completed delivery.
 
 ## Data privacy and security
 
-- Original source files remain in the controlled Databricks Volume.
-- CSV files, exports, screenshots containing sensitive information, and credentials must not be committed.
-- Access keys, personal access tokens, secrets, and Databricks credentials must never appear in SQL, notebooks, documentation, issues, or pull requests.
-- Access is granted through Unity Catalog and repository permissions using each member's own account.
-- Follow least privilege: grant only the permissions needed for the assigned work.
-- Do not expose personal workspace URLs, user folders, email addresses, or account identifiers in public documentation.
-- Review notebook outputs and screenshots before sharing them outside the approved team workspace.
-- If real personal or confidential data is introduced later, it must be classified and handled according to the organization’s data-governance policy.
+This educational repository follows the same minimum controls expected in a working data project:
 
-## Business questions
+- Never commit CSV exports, secrets, access keys, personal access tokens, passwords, or Databricks credentials.
+- Never share another member's Databricks or GitHub account.
+- Use Unity Catalog and repository permissions instead of distributing credentials.
+- Grant only the minimum access required for assigned work.
+- Keep the original source in the controlled Volume.
+- Review screenshots and notebook outputs before sharing.
+- Do not publish workspace URLs, user-directory paths, email addresses, or account identifiers.
+- Do not place confidential data in issue descriptions, commit messages, pull requests, or logs.
+- If real personal data is introduced, stop and apply the organization’s classification, retention, masking, and access-control policies before processing it.
 
-The project is designed to support:
+## Business outputs
 
-- Top revenue-generating genre per country
-- Customer segmentation by spending tier
-- Monthly sales trends
-- Employee sales performance
-- Track popularity
-- Regional differences in customer behavior and pricing
+The completed Mart is expected to support:
 
-## Validation approach
+- top revenue-generating genre per country;
+- customer segmentation by spending tier;
+- monthly sales trends;
+- employee sales performance;
+- track popularity by genre or playlist;
+- regional customer and pricing differences.
 
-The project checks:
+## Project note
 
-- Source-to-Raw row counts
-- Duplicate and missing identifiers
-- Missing table relationships
-- Fact-table grain
-- Foreign-key coverage
-- Sales calculations using quantity and unit price
-- Reconciliation between invoice totals and invoice-line sales
-- Business-query output accuracy
-
-## Notes
-
-This repository is an educational project under active development. SQL outputs and documentation should be updated when implementation decisions are finalized.
+This repository is an educational team project under active development. The `main` branch is the delivery baseline; feature branches are work in progress until reviewed and merged.
