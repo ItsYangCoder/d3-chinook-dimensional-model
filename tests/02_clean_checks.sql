@@ -18,8 +18,8 @@ WHERE total <= 0;
 
 
 -- Row count
-SELECT COUNT(*) AS invoiceline_clean_row_count
-FROM workspace.d3_clean.invoiceline_clean;
+SELECT COUNT(*) AS invoice_line_clean_row_count
+FROM workspace.d3_clean.invoice_line_clean;
 
 -- Null checks
 SELECT
@@ -29,17 +29,17 @@ SELECT
     COUNT(CASE WHEN track_id IS NULL THEN 1 END) AS null_track_id,
     COUNT(CASE WHEN quantity IS NULL THEN 1 END) AS null_quantity,
     COUNT(CASE WHEN unit_price IS NULL THEN 1 END) AS null_unit_price
-FROM workspace.d3_clean.invoiceline_clean;
+FROM workspace.d3_clean.invoice_line_clean;
 
 -- Invalid values
 SELECT
     COUNT(*) AS invalid_quantity
-FROM workspace.d3_clean.invoiceline_clean
+FROM workspace.d3_clean.invoice_line_clean
 WHERE quantity <= 0;
 
 SELECT
     COUNT(*) AS invalid_unit_price
-FROM workspace.d3_clean.invoiceline_clean
+FROM workspace.d3_clean.invoice_line_clean
 WHERE unit_price <= 0;
 
 
