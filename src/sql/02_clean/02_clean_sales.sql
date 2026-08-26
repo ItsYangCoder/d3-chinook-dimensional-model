@@ -1,12 +1,12 @@
 --Clean and Standardize Invoice and InvoiceLine Table to Create Sales table
 --City Mapping for Missing Billing State
-CREATE OR REPLACE TABLE workspace.d3_raw.city_state_raw (
+CREATE OR REPLACE TABLE workspace.d3_clean.billing_state_enriched (
     city VARCHAR(255),
     state VARCHAR(255),
     country VARCHAR(255)
 );
 
-INSERT INTO workspace.d3_raw.city_state_raw VALUES
+INSERT INTO workspace.d3_clean.billing_state_enriched VALUES
 ('Stuttgart','Baden-Württemberg','Germany'),
 ('Oslo','Oslo','Norway'),
 ('Brussels','Brussels-Capital Region','Belgium'),
@@ -36,6 +36,14 @@ INSERT INTO workspace.d3_raw.city_state_raw VALUES
 --Clean Invoice Raw
 CREATE OR REPLACE TABLE workspace.d3_clean.invoice_clean AS
 
+--Check for duplicates
+SELECT 
+    invoice_id, customer_id,
+    COUNT(*) AS duplicate_count
+FROM workspace.d3_clean.invoice_clean
+GROUP BY invoice_id,customer_id
+HAVING COUNT(*) > 1;
+
 --Select Distinct to filter out duplicate rows
 --Set Data Types for Primary and Foreign keys
 SELECT DISTINCT
@@ -48,23 +56,34 @@ SELECT DISTINCT
     TRIM(i.BillingAddress) AS billing_address,       
     TRIM(i.BillingCity) AS billing_city,             
 
-    -- recover BillingState from city_state_raw if missing
-    COALESCE(TRIM(i.BillingState), TRIM(csr.state)) AS billing_state,
+    -- recover BillingState from billing_state_enriched if missing
+    COALESCE(TRIM(i.BillingState), TRIM(bs.state)) AS billing_state,
 
 --Standardize Format
     TRIM(i.BillingCountry) AS billing_country,       
     TRIM(i.BillingPostalCode) AS billing_postal_code 
 FROM workspace.d3_raw.invoice_raw i
-LEFT JOIN workspace.d3_raw.city_state_raw csr
-    ON i.BillingCity = csr.city
+LEFT JOIN workspace.d3_clean.billing_state_enriched bs
+    ON i.BillingCity = bs.city
 WHERE i.InvoiceDate IS NOT NULL
   AND i.Total > 0;
 
- 
--- Clean InvoiceLine Raw
-CREATE OR REPLACE TABLE workspace.d3_clean.invoiceline_clean AS
+--Count Check for Invoice 
+SELECT COUNT(*)
+FROM workspace.d3_clean.invoice_clean;
 
---Select Distinct to filter out duplicate rows
+
+-- Clean InvoiceLine Raw
+CREATE OR REPLACE TABLE workspace.d3_clean.invoice_line_clean AS
+
+--Check for duplicates
+SELECT 
+    invoice_id, invoice_line_id, track_id,
+    COUNT(*) AS duplicate_count_line
+FROM workspace.d3_clean.invoice_line_clean
+GROUP BY invoice_id, invoice_line_id, track_id
+HAVING COUNT(*) > 1;
+
 --Set Data Types for Primary and Foreign keys
 SELECT DISTINCT
     CAST(il.InvoiceLineId AS BIGINT) AS invoice_line_id,   
@@ -74,10 +93,17 @@ SELECT DISTINCT
     CAST(il.Quantity AS INT) AS quantity                   
 FROM workspace.d3_raw.invoice_line_raw il
 WHERE il.Quantity > 0                                     
-  AND il.UnitPrice > 0;                                    
+  AND il.UnitPrice > 0;      
+
+--Count check for invoice_line
+SELECT COUNT (*)
+FROM workspace.d3_clean.invoice_line_clean;                              
 
 -- Create Clean Sales Table by joining clean_invoice and clean_invoiceline
 CREATE OR REPLACE TABLE workspace.d3_clean.clean_sales AS
+
+--Check for duplicates
+SELECT *
 
 --Primary and Foreign Keys
 SELECT DISTINCT
@@ -96,6 +122,6 @@ SELECT DISTINCT
     ci.billing_state,                   
     ci.billing_country,                 
     ci.billing_postal_code             
-FROM workspace.d3_clean.invoiceline_clean il
+FROM workspace.d3_clean.invoice_line_clean il
 INNER JOIN workspace.d3_clean.invoice_clean ci
     ON il.invoice_id = ci.invoice_id;
