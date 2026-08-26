@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE dim_track AS
+CREATE OR REPLACE TABLE workspace.d3_mart.dim_track USING DELTA AS
 SELECT 
     t.track_id,
     t.track_name,
@@ -10,11 +10,15 @@ SELECT
     ar.Name AS artist_name,
     m.Name AS media_type_name,
     g.Name AS genre_name
-FROM stg_track t
-LEFT JOIN raw_album al ON t.album_id = TRY_CAST(al.AlbumId AS INT)
-LEFT JOIN raw_artist ar ON TRY_CAST(al.ArtistId AS INT) = TRY_CAST(ar.ArtistId AS INT)
-LEFT JOIN raw_media_type m ON t.media_type_id = TRY_CAST(m.MediaTypeId AS INT)
-LEFT JOIN raw_genre g ON t.genre_id = TRY_CAST(g.GenreId AS INT);
+FROM workspace.d3_clean.stg_track t
+LEFT JOIN workspace.d3_raw.raw_album al
+    ON t.album_id = TRY_CAST(al.AlbumId AS INT)
+LEFT JOIN workspace.d3_raw.raw_artist ar
+    ON TRY_CAST(al.ArtistId AS INT) = TRY_CAST(ar.ArtistId AS INT)
+LEFT JOIN workspace.d3_raw.raw_media_type m
+    ON t.media_type_id = TRY_CAST(m.MediaTypeId AS INT)
+LEFT JOIN workspace.d3_raw.raw_genre g
+    ON t.genre_id = TRY_CAST(g.GenreId AS INT);
 
 -- Verification
 SELECT 
@@ -23,4 +27,4 @@ SELECT
     COUNT(artist_name) AS tracks_with_artist,
     COUNT(media_type_name) AS tracks_with_media_type,
     COUNT(genre_name) AS tracks_with_genre
-FROM dim_track;
+FROM workspace.d3_mart.dim_track;
