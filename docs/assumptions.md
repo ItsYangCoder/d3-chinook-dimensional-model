@@ -14,8 +14,11 @@ Join Hierarchy: Tracks maintain optional associations with albums (LEFT JOIN), w
 
  **Assumption: Billing State Recovery**
 
-**What we do:**
+**What we do:**  
 If BillingState is missing, we recover it using a reference table (billing_state_enriched) that maps each city to its correct state and country.
+
+**Manual intervention:** 
+This mapping is a team‑defined reference, created based on the unique city and country combinations found in the current Chinook dataset. It is not automatically sourced — we decided to build it manually to ensure consistency.
 
 **Source of values:**
 The mapping comes from known city‑to‑state relationships stored in the reference table.
