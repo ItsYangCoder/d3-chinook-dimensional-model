@@ -32,9 +32,18 @@ Validation confirmed that:
 
 Original `UnitPrice` values are preserved for valid records.
 
-For corrupted records and invalid prices, a fallback value of `0.99` is applied.
+### Unit Price Recovery Assumption
 
-The following logic is used:
+Validation of the `raw_track` source data showed that valid track prices consisted of only two expected values: `0.99` and `1.99`.
+
+A small number of corrupted records contained non-price values in the `UnitPrice` column, including artist names (`Earl Chinna Smith`, `Felix Howard`) and large numeric values (`142081`, `274504`, `4195542`, `5760129`) caused by column shifts during CSV ingestion.
+
+Because the original prices for these corrupted records could not be reliably recovered, a fallback value of `0.99` was applied when:
+
+- The row was identified as a column-shifted record (`AlbumId` contained non-numeric text), or
+- The parsed price exceeded the expected business range (`> 10`).
+
+The fallback value of `0.99` was selected because it is the minimum valid price observed in the dataset and represents the standard track price in the Chinook catalog. This assumption prevents invalid values from propagating into downstream dimension and fact tables while preserving analytic usability.
 
 ```sql
 CASE
