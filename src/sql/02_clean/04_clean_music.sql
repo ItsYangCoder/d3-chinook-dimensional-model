@@ -63,7 +63,7 @@ WHERE TRY_CAST(t.TrackId AS BIGINT) IS NOT NULL
   AND (al.AlbumId IS NULL OR m.MediaTypeId IS NULL OR g.GenreId IS NULL);
 
   -- Staging layer
-CREATE OR REPLACE TABLE workspace.d3_clean.stg_track
+CREATE OR REPLACE TABLE workspace.d3_clean.track_clean
 USING DELTA
 AS
 SELECT 
@@ -106,13 +106,14 @@ SELECT
 
     CASE
         WHEN AlbumId RLIKE '[^0-9]' THEN 0.99
+        WHEN TRY_CAST(UnitPrice AS DECIMAL(10,2)) IS NULL THEN 0.99
         WHEN TRY_CAST(UnitPrice AS DECIMAL(10,2)) > 10 THEN 0.99
         ELSE TRY_CAST(UnitPrice AS DECIMAL(10,2))
     END AS unit_price
 
 FROM workspace.d3_raw.raw_track;
 
-SELECT COUNT(*) FROM workspace.d3_clean.stg_track;
+SELECT COUNT(*) FROM workspace.d3_clean.track_clean;
 
 -- Row count validation
 SELECT COUNT(*) AS recovered_rows
@@ -129,12 +130,12 @@ SELECT
     MIN(unit_price) AS min_price,
     MAX(unit_price) AS max_price,
     COUNT(DISTINCT unit_price) AS distinct_prices
-FROM workspace.d3_clean.stg_track;
+FROM workspace.d3_clean.track_clean;
 
 -- Remaining prices validation
 SELECT
     track_id,
     track_name,
     unit_price
-FROM workspace.d3_clean.stg_track
+FROM workspace.d3_clean.track_clean
 WHERE unit_price > 10;
