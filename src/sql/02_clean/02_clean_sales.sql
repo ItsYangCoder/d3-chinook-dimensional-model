@@ -113,9 +113,9 @@ INNER JOIN workspace.d3_clean.invoice_clean ci
     ON il.invoice_id = ci.invoice_id;
 
 -- Duplicate check for clean_sales
-SELECT invoice_id, COUNT(*) AS duplicate_sales_count
+SELECT invoice_id, invoice_line_id, track_id, COUNT(*) AS duplicate_count_sales
 FROM workspace.d3_clean.clean_sales
-GROUP BY invoice_id
+GROUP BY invoice_id, invoice_line_id, track_id
 HAVING COUNT(*) > 1;
 
 -- Row count check
