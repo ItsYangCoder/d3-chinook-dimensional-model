@@ -123,13 +123,13 @@ The table below reflects the reviewed integration state of `main`, not only the 
 | Clean Sales | Complete | Invoice, invoice-line, and line-level Clean Sales tables are integrated |
 | Date dimension | Complete | `dim_date` is integrated and validated |
 | Source and Clean checks | Complete | Key, null, value, row-count, and reconciliation checks are integrated |
-| Music pipeline | Under review | Raw Music, Clean Music, and `dim_track` corrections must pass runtime validation |
-| `fact_sales` | Blocked | Begins after the final Track dimension is validated and integrated |
-| Analytics and dashboard | Pending | Final execution depends on the completed Mart |
+| Music pipeline | Complete | Raw Music, Clean Music, and `dim_track` are integrated and validated |
+| `fact_sales` | Complete | Contains 2,240 validated invoice-line rows with no duplicate or missing dimension keys |
+| Analytics and dashboard | In progress | Genre revenue analysis is complete; remaining team analytics and dashboard work are being finalized |
 
-### Current music-pipeline acceptance criteria
+### Music pipeline validation results
 
-Music integration must satisfy all of the following before merge:
+The integrated Music pipeline passed the following validation criteria:
 
 - parse quoted CSV fields correctly, including track names containing commas;
 - preserve both valid source prices, `0.99` and `1.99`;
@@ -153,6 +153,11 @@ Music integration must satisfy all of the following before merge:
 | Date | Source range | 2021-01-01 to 2025-12-22 |
 | Track source | Rows and unique Track IDs | 3,503 |
 | Track source | Valid UnitPrice range | 0.99 to 1.99 |
+| Track dimension | Rows and unique Track IDs | 3,503 |
+| Track dimension | Missing album, artist, genre, and media relationships | 0 |
+| Sales fact | Rows and unique InvoiceLine IDs | 2,240 |
+| Sales fact | Missing Customer, Date, and Track keys | 0 |
+| Sales fact | Duplicate InvoiceLine IDs | 0 |
 | Sales reconciliation | Invoice-total differences | 0 |
 
 These figures are validation baselines. If a future run differs, investigate the source version, parsing configuration, filtering, joins, and duplicate keys before accepting the result.
@@ -210,7 +215,8 @@ For `fact_sales`, reviewers must confirm:
 - one row per `InvoiceLineId`;
 - 2,240 expected rows at the current baseline;
 - no duplicate invoice-line IDs;
-- no unresolved Customer, Track, Date, or Employee relationships;
+- no unresolved Customer, Track, or Date relationships;
+- employee performance is linked through each customer's support representative;
 - `line_amount = quantity × unit_price`;
 - aggregated line amounts reconcile with invoice totals.
 
