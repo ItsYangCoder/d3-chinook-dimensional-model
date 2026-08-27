@@ -28,15 +28,17 @@ LIMIT 5;
 
 SELECT
     f.invoice_line_id,
-    f.employee_key,
+    c.support_rep_id,
     e.full_name,
     e.title,
     f.quantity,
     f.unit_price,
     f.line_amount
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 LIMIT 10;
 
 -- Check Sales Support Agents only
@@ -58,8 +60,10 @@ SELECT
     e.title,
     ROUND(SUM(f.line_amount), 2) AS total_revenue
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 WHERE e.title = 'Sales Support Agent'
 GROUP BY
     e.employee_id,
@@ -77,8 +81,10 @@ SELECT
     e.title,
     ROUND(SUM(f.line_amount), 2) AS total_revenue
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 JOIN workspace.d3_mart.dim_date d
     ON f.date_key = d.date_key
 WHERE e.title = 'Sales Support Agent'
@@ -103,8 +109,10 @@ SELECT
     ROUND(SUM(f.line_amount), 2) AS total_revenue,
     SUM(f.quantity) AS total_quantity_sold
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 JOIN workspace.d3_mart.dim_date d
     ON f.date_key = d.date_key
 WHERE e.title = 'Sales Support Agent'
@@ -129,8 +137,10 @@ SELECT
     SUM(f.quantity) AS total_quantity_sold,
     COUNT(DISTINCT f.invoice_id) AS total_invoices
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 JOIN workspace.d3_mart.dim_date d
     ON f.date_key = d.date_key
 WHERE e.title = 'Sales Support Agent'
@@ -154,8 +164,10 @@ SELECT
     SUM(f.quantity) AS units_sold,
     COUNT(DISTINCT f.invoice_id) AS total_invoices
 FROM workspace.d3_mart.fact_sales f
+JOIN workspace.d3_mart.dim_customer c
+    ON f.customer_id = c.customer_id
 JOIN workspace.d3_mart.dim_employee e
-    ON f.employee_key = e.employee_key
+    ON c.support_rep_id = e.employee_id
 JOIN workspace.d3_mart.dim_date d
     ON f.date_key = d.date_key
 WHERE e.title = 'Sales Support Agent'
