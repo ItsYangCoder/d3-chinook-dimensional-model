@@ -55,7 +55,7 @@ END AS unit_price
 
 Validation results:
 
-- Recovered records: 4
+- Recovered records: 6
 - Minimum price: 0.99
 - Maximum price: 1.99
 - Distinct prices: 2
