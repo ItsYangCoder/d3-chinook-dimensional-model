@@ -38,10 +38,27 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
+
+      - name: Check required Databricks settings
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for variable_name in DATABRICKS_HOST DATABRICKS_TOKEN DATABRICKS_BUNDLE_VAR_warehouse_id; do
+            if [[ -z "${!variable_name:-}" ]]; then
+              echo "::error::${variable_name} is empty. Check the secrets in the ${{ inputs.target }} GitHub environment."
+              exit 1
+            fi
+          done
+
+          if [[ ! "${DATABRICKS_BUNDLE_VAR_warehouse_id}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::DATABRICKS_BUNDLE_VAR_warehouse_id must contain only the warehouse ID, without 'id', spaces, '.', or parentheses."
+            exit 1
+          fi
 
       - name: Validate Databricks bundle
         run: databricks bundle validate --target "${{ inputs.target }}"
