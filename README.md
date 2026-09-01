@@ -96,3 +96,51 @@ The pipeline is orchestrated using Databricks Jobs to run the Raw, Clean, Mart, 
 ## Notes
 
 This project was created for educational purposes using the Chinook sample dataset.
+
+## CI/CD
+
+This repository uses GitHub Actions and Databricks Declarative Automation Bundles.
+
+### Continuous Integration
+
+The `.github/workflows/chinook-ci.yml` workflow runs when a pull request or push targets `main`. It:
+
+- Checks for whitespace errors.
+- Confirms that the expected setup, Raw, Clean, Mart, Analytics, and test files exist.
+- Checks that SQL files are not empty.
+- Confirms that Raw scripts use `CREATE TABLE IF NOT EXISTS` instead of overwriting Raw tables.
+- Validates Python syntax in repository Python files.
+
+### Continuous Delivery
+
+The `.github/workflows/chinook-cd.yml` workflow manually deploys the bundle to the selected Databricks target:
+
+- `dev` for development deployment.
+- `prod` for production deployment.
+
+The `databricks.yml` file defines the Chinook job and its dependency order:
+
+`Setup → Raw → Clean → Mart → Validation and Analytics`
+
+The workflow can optionally run the deployed `chinook_pipeline` job after deployment.
+
+### Required GitHub Actions Secrets
+
+Before running CD, add these repository or environment secrets under **Settings → Secrets and variables → Actions**:
+
+- `DATABRICKS_HOST` – your Databricks workspace URL.
+- `DATABRICKS_TOKEN` – a Databricks access token with permission to deploy and run the bundle.
+- `DATABRICKS_SQL_WAREHOUSE_ID` – the SQL warehouse ID used by the SQL tasks.
+
+Never commit Databricks URLs, tokens, or credentials into the repository.
+
+### How to Deploy
+
+1. Open the repository's **Actions** tab.
+2. Select **Chinook CD - Databricks**.
+3. Select **Run workflow**.
+4. Choose `dev) first.
+5. Leave **Run the Chinook job after deployment** disabled for the first deployment.
+6. After the bundle deploys successfully, run it again with the job option enabled.
+
+The SQL validation files return data-quality results from Databricks. Review those results in the Databricks job output to confirm that the checks return zero invalid records.
