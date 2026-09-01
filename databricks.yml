@@ -1,1 +1,227 @@
-bundle:\n  name: chinook-dimensional-model\n\nvariables:\n  warehouse_id:\n    description: SQL warehouse used by the Chinook SQL tasks.\n    default: ""\n\ntargets:\n  dev:\n    default: true\n    mode: development\n    workspace:\n      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}\n\n  prod:\n    mode: production\n    workspace:\n      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}\n\nresources:\n  jobs:\n    chinook_pipeline:\n      name: chinook-dimensional-model-${bundle.target}\n      max_concurrent_runs: 1\n      tasks:\n        - task_key: setup\n          sql_task:\n            file:\n              path: ./src/sql/00_setup/00_setup.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: raw_customer\n          depends_on:\n            - task_key: setup\n          sql_task:\n            file:\n              path: ./src/sql/01_raw/01_raw_customer.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: raw_sales\n          depends_on:\n            - task_key: setup\n          sql_task:\n            file:\n              path: ./src/sql/01_raw/02_raw_sales.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: raw_employee\n          depends_on:\n            - task_key: setup\n          sql_task:\n            file:\n              path: ./src/sql/01_raw/03_raw_employee.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: raw_music\n          depends_on:\n            - task_key: setup\n          sql_task:\n            file:\n              path: ./src/sql/01_raw/04_raw_music.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: clean_customer\n          depends_on:\n            - task_key: raw_customer\n          sql_task:\n            file:\n              path: ./src/sql/02_clean/01_clean_customer.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: clean_sales\n          depends_on:\n            - task_key: raw_sales\n          sql_task:\n            file:\n              path: ./src/sql/02_clean/02_clean_sales.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: clean_employee\n          depends_on:\n            - task_key: raw_employee\n          sql_task:\n            file:\n              path: ./src/sql/02_clean/03_clean_employee.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: clean_music\n          depends_on:\n            - task_key: raw_music\n          sql_task:\n            file:\n              path: ./src/sql/02_clean/04_clean_music.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: dim_customer\n          depends_on:\n            - task_key: clean_customer\n            - task_key: clean_employee\n          sql_task:\n            file:\n              path: ./src/sql/03_mart/01_dim_customer.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: dim_date\n          depends_on:\n            - task_key: clean_sales\n          sql_task:\n            file:\n              path: ./src/sql/03_mart/02_dim_date.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: dim_employee\n          depends_on:\n            - task_key: clean_employee\n          sql_task:\n            file:\n              path: ./src/sql/03_mart/03_dim_employee.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: dim_track\n          depends_on:\n            - task_key: clean_music\n          sql_task:\n            file:\n              path: ./src/sql/03_mart/04_dim_track.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: fact_sales\n          depends_on:\n            - task_key: dim_customer\n            - task_key: dim_date\n            - task_key: dim_employee\n            - task_key: dim_track\n            - task_key: clean_sales\n          sql_task:\n            file:\n              path: ./src/sql/03_mart/05_fact_sales.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: source_checks\n          depends_on:\n            - task_key: raw_customer\n            - task_key: raw_sales\n            - task_key: raw_employee\n            - task_key: raw_music\n          sql_task:\n            file:\n              path: ./tests/01_source_checks.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: clean_checks\n          depends_on:\n            - task_key: clean_customer\n            - task_key: clean_sales\n            - task_key: clean_employee\n            - task_key: clean_music\n          sql_task:\n            file:\n              path: ./tests/02_clean_checks.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: mart_checks\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./tests/03_mart_checks.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: top_revenue_genre_country\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/01_top_revenue_genre_country.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: customer_spending_tiers\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/02_customer_spending_tiers.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: monthly_sales_trend\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/03_monthly_sales_trend.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: employee_sales_performance\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/04_employee_sales_performance.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: track_popularity\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/05_track_popularity_genre_playlist.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: regional_customer_behavior\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./src/sql/04_analytics/06_regional_customer_behavior.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n        - task_key: business_query_checks\n          depends_on:\n            - task_key: fact_sales\n          sql_task:\n            file:\n              path: ./tests/04_business_query_checks.sql\n              source: WORKSPACE\n            warehouse_id: ${var.warehouse_id}\n
+bundle:
+  name: chinook-dimensional-model
+
+variables:
+  warehouse_id:
+    description: SQL warehouse used by the Chinook SQL tasks.
+    default: ""
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+
+resources:
+  jobs:
+    chinook_pipeline:
+      name: chinook-dimensional-model-${bundle.target}
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: setup
+          sql_task:
+            file:
+              path: ./src/sql/00_setup/00_setup.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: raw_customer
+          depends_on:
+            - task_key: setup
+          sql_task:
+            file:
+              path: ./src/sql/01_raw/01_raw_customer.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: raw_sales
+          depends_on:
+            - task_key: setup
+          sql_task:
+            file:
+              path: ./src/sql/01_raw/02_raw_sales.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: raw_employee
+          depends_on:
+            - task_key: setup
+          sql_task:
+            file:
+              path: ./src/sql/01_raw/03_raw_employee.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: raw_music
+          depends_on:
+            - task_key: setup
+          sql_task:
+            file:
+              path: ./src/sql/01_raw/04_raw_music.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: clean_customer
+          depends_on:
+            - task_key: raw_customer
+          sql_task:
+            file:
+              path: ./src/sql/02_clean/01_clean_customer.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: clean_sales
+          depends_on:
+            - task_key: raw_sales
+          sql_task:
+            file:
+              path: ./src/sql/02_clean/02_clean_sales.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: clean_employee
+          depends_on:
+            - task_key: raw_employee
+          sql_task:
+            file:
+              path: ./src/sql/02_clean/03_clean_employee.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: clean_music
+          depends_on:
+            - task_key: raw_music
+          sql_task:
+            file:
+              path: ./src/sql/02_clean/04_clean_music.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: dim_customer
+          depends_on:
+            - task_key: clean_customer
+            - task_key: clean_employee
+          sql_task:
+            file:
+              path: ./src/sql/03_mart/01_dim_customer.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: dim_date
+          depends_on:
+            - task_key: clean_sales
+          sql_task:
+            file:
+              path: ./src/sql/03_mart/02_dim_date.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: dim_employee
+          depends_on:
+            - task_key: clean_employee
+          sql_task:
+            file:
+              path: ./src/sql/03_mart/03_dim_employee.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: dim_track
+          depends_on:
+            - task_key: clean_music
+          sql_task:
+            file:
+              path: ./src/sql/03_mart/04_dim_track.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: fact_sales
+          depends_on:
+            - task_key: dim_customer
+            - task_key: dim_date
+            - task_key: dim_employee
+            - task_key: dim_track
+            - task_key: clean_sales
+          sql_task:
+            file:
+              path: ./src/sql/03_mart/05_fact_sales.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: source_checks
+          depends_on:
+            - task_key: raw_customer
+            - task_key: raw_sales
+            - task_key: raw_employee
+            - task_key: raw_music
+          sql_task:
+            file:
+              path: ./tests/01_source_checks.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: clean_checks
+          depends_on:
+            - task_key: clean_customer
+            - task_key: clean_sales
+            - task_key: clean_employee
+            - task_key: clean_music
+          sql_task:
+            file:
+              path: ./tests/02_clean_checks.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: mart_checks
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./tests/03_mart_checks.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: top_revenue_genre_country
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/01_top_revenue_genre_country.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: customer_spending_tiers
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/02_customer_spending_tiers.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: monthly_sales_trend
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/03_monthly_sales_trend.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: employee_sales_performance
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/04_employee_sales_performance.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: track_popularity
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/05_track_popularity_genre_playlist.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: regional_customer_behavior
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./src/sql/04_analytics/06_regional_customer_behavior.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+        - task_key: business_query_checks
+          depends_on:
+            - task_key: fact_sales
+          sql_task:
+            file:
+              path: ./tests/04_business_query_checks.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
