@@ -1,7 +1,7 @@
 -- Creates the sales fact table.
 -- One row represents one invoice line / one purchased track.
 
-CREATE OR REPLACE TABLE workspace.d3_mart.fact_sales AS
+CREATE TABLE IF NOT EXISTS workspace.d3_mart.fact_sales AS
 SELECT
     -- Degenerate and dimension keys
     il.invoice_line_id,

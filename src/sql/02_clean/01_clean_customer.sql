@@ -1,7 +1,7 @@
 -- Clean and standardize customer fields.
 -- Data-quality checks are kept in a separate test script.
 
-CREATE OR REPLACE TABLE workspace.d3_clean.customer_clean AS
+CREATE TABLE IF NOT EXISTS workspace.d3_clean.customer_clean AS
 SELECT
     -- Primary and foreign keys
     CAST(CustomerId AS INT) AS customer_id,

@@ -1,7 +1,7 @@
 -- Creates the track dimension.
 -- One row represents one track.
 
-CREATE OR REPLACE TABLE workspace.d3_mart.dim_track AS
+CREATE TABLE IF NOT EXISTS workspace.d3_mart.dim_track AS
 SELECT
     -- Track key and attributes
     t.track_id,

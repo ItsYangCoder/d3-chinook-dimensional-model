@@ -1,6 +1,5 @@
 -- Creates the employee dimension table for reporting.
-
-CREATE OR REPLACE TABLE workspace.d3_mart.dim_employee
+CREATE TABLE IF NOT EXISTS workspace.d3_mart.dim_employee
 USING DELTA
 AS
 SELECT

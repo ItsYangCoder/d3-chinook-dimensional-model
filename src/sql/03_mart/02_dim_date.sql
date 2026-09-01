@@ -1,6 +1,5 @@
 -- Creates one reporting-ready row per invoice date.
-
-CREATE OR REPLACE TABLE workspace.d3_mart.dim_date AS
+CREATE TABLE IF NOT EXISTS workspace.d3_mart.dim_date AS
 SELECT DISTINCT
     -- Surrogate key in YYYYMMDD format
     CAST(DATE_FORMAT(invoice_date, 'yyyyMMdd') AS INT) AS date_key,

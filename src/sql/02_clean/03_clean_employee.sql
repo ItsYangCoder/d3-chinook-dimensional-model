@@ -1,7 +1,7 @@
 -- Cleans and standardizes employee information.
 -- Data-quality checks are kept in a separate test script.
 
-CREATE OR REPLACE TABLE workspace.d3_clean.employee_clean
+CREATE TABLE IF NOT EXISTS workspace.d3_clean.employee_clean
 USING DELTA
 AS
 SELECT

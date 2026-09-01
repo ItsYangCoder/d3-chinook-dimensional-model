@@ -1,6 +1,6 @@
 -- Creates one reporting-ready row per customer.
 
-CREATE OR REPLACE TABLE workspace.d3_mart.dim_customer AS
+CREATE TABLE IF NOT EXISTS workspace.d3_mart.dim_customer AS
 SELECT
     -- Business keys and attributes
     customer_id,

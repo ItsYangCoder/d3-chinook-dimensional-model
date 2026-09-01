@@ -1,7 +1,7 @@
 -- Cleans and standardizes music-related data.
 -- Data-quality checks are kept in a separate test script.
 
-CREATE OR REPLACE TABLE workspace.d3_clean.track_clean AS
+CREATE TABLE IF NOT EXISTS workspace.d3_clean.track_clean AS
 SELECT
     -- Primary and foreign keys
     TRY_CAST(TrackId AS INT) AS track_id,

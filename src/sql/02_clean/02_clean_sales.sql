@@ -1,7 +1,7 @@
 -- Cleans and standardizes sales-related tables.
 -- Data-quality checks are kept in a separate test script.
 
-CREATE OR REPLACE TABLE workspace.d3_clean.invoice_clean AS
+CREATE TABLE IF NOT EXISTS workspace.d3_clean.invoice_clean AS
 SELECT
     -- Primary and foreign keys
     CAST(InvoiceId AS INT) AS invoice_id,
@@ -28,7 +28,7 @@ FROM workspace.d3_raw.invoice_raw
 WHERE InvoiceId IS NOT NULL;
 
 
-CREATE OR REPLACE TABLE workspace.d3_clean.invoice_line_clean AS
+CREATE TABLE IF NOT EXISTS workspace.d3_clean.invoice_line_clean AS
 SELECT
     -- Primary and foreign keys
     CAST(InvoiceLineId AS INT) AS invoice_line_id,
