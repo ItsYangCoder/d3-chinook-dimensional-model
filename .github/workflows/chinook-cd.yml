@@ -34,7 +34,7 @@ jobs:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
       DATABRICKS_BUNDLE_TARGET: ${{ inputs.target }}
-      DATABRICKS_BUNDLE_VAR_warehouse_id: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
+      BUNDLE_VAR_warehouse_id: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
 
     steps:
       - name: Check out repository
@@ -48,15 +48,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          for variable_name in DATABRICKS_HOST DATABRICKS_TOKEN DATABRICKS_BUNDLE_VAR_warehouse_id; do
+          for variable_name in DATABRICKS_HOST DATABRICKS_TOKEN BUNDLE_VAR_warehouse_id; do
             if [[ -z "${!variable_name:-}" ]]; then
               echo "::error::${variable_name} is empty. Check the secrets in the ${{ inputs.target }} GitHub environment."
               exit 1
             fi
           done
 
-          if [[ ! "${DATABRICKS_BUNDLE_VAR_warehouse_id}" =~ ^[A-Za-z0-9_-]+$ ]]; then
-            echo "::error::DATABRICKS_BUNDLE_VAR_warehouse_id must contain only the warehouse ID, without 'id', spaces, '.', or parentheses."
+          if [[ ! "${BUNDLE_VAR_warehouse_id}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::BUNDLE_VAR_warehouse_id must contain only the warehouse ID, without 'id', spaces, '.', or parentheses."
             exit 1
           fi
 
