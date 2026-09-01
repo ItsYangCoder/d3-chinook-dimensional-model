@@ -1,0 +1,54 @@
+name: Chinook CD - Databricks
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Databricks deployment target
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - prod
+      run_job:
+        description: Run the Chinook job after deployment
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chinook-cd-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Databricks (${{ inputs.target }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_BUNDLE_TARGET: ${{ inputs.target }}
+      DATABRICKS_BUNDLE_VAR_warehouse_id: ${{ secrets.DATABRICKS_SQL_WAREHOUSE_ID }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate Databricks bundle
+        run: databricks bundle validate --target "${{ inputs.target }}"
+
+      - name: Deploy Databricks bundle
+        run: databricks bundle deploy --target "${{ inputs.target }}"
+
+      - name: Run Chinook job
+        if: ${{ inputs.run_job == true }}
+        run: databricks bundle run chinook_pipeline --target "${{ inputs.target }}"
