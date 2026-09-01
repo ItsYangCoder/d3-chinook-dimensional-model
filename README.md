@@ -139,7 +139,7 @@ Never commit Databricks URLs, tokens, or credentials into the repository.
 1. Open the repository's **Actions** tab.
 2. Select **Chinook CD - Databricks**.
 3. Select **Run workflow**.
-4. Choose `dev) first.
+4. Choose `dev` first.
 5. Leave **Run the Chinook job after deployment** disabled for the first deployment.
 6. After the bundle deploys successfully, run it again with the job option enabled.
 
